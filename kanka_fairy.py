@@ -1,13 +1,10 @@
-from ast import arg
-from html import entities
-from http import server
 from logging import info
 import discord
 from discord import app_commands
 from discord.ext import commands
 import os
 import requests
-import json
+
 
 # TODO
 # Message for generating tokens 
@@ -67,13 +64,17 @@ async def note (interaction: discord.Interaction, note_name: str):
     return
 
 # TODO
+# Needs filters
 @bot.tree.command(name = "character")
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
-    serverID = get_campaignID_by_name(interaction)
-    char_name = api_call(interaction.user.name, serverID)
+    serverID = get_campaignID_by_name(interaction) + "/"
+    character_name = character_name + "/"
 
-    await interaction.response.send_message(char_name)
+    # returns dict
+    char_info = api_call(interaction.user.name, serverID, character_name)
+    print("DEBUG MESSAGE: \n" + char_info)
+    await interaction.response.send_message(char_info)
     return
 
     # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
@@ -94,7 +95,9 @@ def get_campaignID_by_name(interaction:discord.Interaction):
     for x in kanka_info["data"]:
         if (interaction.guild.name == x["name"]):
             # print ("this is the kanka campaign:" + x["name"])
-            return x["id"]
+            # Converts int to string
+            campaignID = str(x["id"])
+            return campaignID
 
     return MSG_NO_MATCHING_CAMPAIGN
 
@@ -102,8 +105,10 @@ def get_campaignID_by_name(interaction:discord.Interaction):
 # May need to make a seperate api call for entities and characters
 # ^  Don't forget that all endpoints documented here need to be prefixed with "1.0/campaigns/{campaign.id}/."
 def api_call (user_name, campaign_id = "", entity = ""):
-    url = REQUEST_PATH + "campaigns/" + str(campaign_id) + entity # here we add variable to specific sections? can add campaign id to the end of url to specify among every campaign stored on kanka
+    url = REQUEST_PATH + "campaigns/" + campaign_id + entity # here we add variable to specific sections? can add campaign id to the end of url to specify among every campaign stored on kanka
 
+    print (url)
+    
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
