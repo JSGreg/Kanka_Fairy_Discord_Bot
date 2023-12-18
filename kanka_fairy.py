@@ -22,8 +22,6 @@ MSG_NO_MATCHING_CAMPAIGN = "Found no matching campaign. \nPlease check that serv
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
-# client = discord.Client(intents=discord.Intents.all())
-
 @bot.event
 async def on_ready():
     print('Kanka Fairy is logged on'.format(bot))
@@ -37,7 +35,6 @@ async def on_ready():
 # TODO
 @bot.tree.command(name = "hello")
 async def hello (interaction: discord.Interaction):
-    # print(api_call(user_name=os.getenv('pom_pom_pom_TOKEN')))
     await interaction.response.send_message(f"Hi {interaction.user.mention}!")
 
 #TODO
@@ -71,10 +68,10 @@ async def note (interaction: discord.Interaction, note_name: str):
     return
 
 # TODO
-# Needs filters
 @bot.tree.command(name = "character")
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
+    await interaction.response.defer()
     serverID = get_campaignID_by_name(interaction) + "/"
     entity_type = "entities?name=" + character_name 
 
@@ -82,28 +79,36 @@ async def character (interaction: discord.Interaction, character_name:str):
     char_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
     if "error" in char_info:
         print(char_info)
-        # await interaction.response.send_message(char_info["error"])
-        await interaction.response.send_message("There was an error")
+        await interaction.response.send_message(char_info["error"])
+        # await interaction.response.send_message("There was an error")
         return
 
-    #TODO use entity to search and filter then use character/quest/ect to find specific entity and format from there
     print(char_info)
     print(char_info["data"][0]["id"])
     print(char_info["data"][0]["name"])
-    message = "Character Name: " + char_info["data"][0]["name"] + "Character id: " + str(char_info["data"][0]["id"])
-    await interaction.response.send_message(message)
+    
+    entity_type = "character/"
+
+    # Can get the api url for charactes from the entities api response
+    char_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
+
+    print(char_response)
+
+    message = "# " + char_response["data"]["name"] + "\n" + "## " + "Title_here" + "\n" + char_response["data"]["urls"]["view"] + "\n" + char_response["data"]["image_full"] + "\nPrivacy: " + str(char_response["data"]["is_private"])
+    print(message)
+    await interaction.followup.send(message)
     return
 
     # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
     # ./campaigns/{id} dict syntax "kanka_info[data][name]"
     # Can use this to verify which campaign player is in by server
-    # TODO Will not use this form of calling to send campign info need to rewrite to skip campaign number
     # await message.channel.send(server ["data"][0]["id"])
 
-# TODO
-# Get Kanka server by name 
-# return campaignID
+# TODO Make a function for null error checking
+def is_null(value):
+    return
 
+# Get Kanka server by name, return campaignID
 def get_campaignID_by_name(interaction:discord.Interaction):
     token = os.getenv(interaction.user.name + '_TOKEN')
     kanka_info = api_call(token)
@@ -111,21 +116,28 @@ def get_campaignID_by_name(interaction:discord.Interaction):
     # Loops thorugh dict and matches server to campaign 
     for x in kanka_info["data"]:
         if (interaction.guild.name == x["name"]):
-            # print ("this is the kanka campaign:" + x["name"])
-            # Converts int to string
             campaignID = str(x["id"])
             return campaignID
 
     return MSG_NO_MATCHING_CAMPAIGN
 
-
-# May need to make a seperate api call for entities and characters
-# ^  Don't forget that all endpoints documented here need to be prefixed with "1.0/campaigns/{campaign.id}/."
 def api_call (token, campaign_id = "", entity_type = "", entity_name =""):
-    url = REQUEST_PATH + "campaigns/" + campaign_id + entity_type + entity_name # here we add variable to specific sections? can add campaign id to the end of url to specify among every campaign stored on kanka
-    # url = "https://api.kanka.io/1.0/campaigns/176953/characters/3952731"
+    url = REQUEST_PATH + "campaigns/" + campaign_id + entity_type + entity_name 
     print (url)
     
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer ' + token
+    }
+
+    response = requests.request("GET", url, headers=headers)
+    response = response.json()
+
+    return response 
+
+def api_call_url(token, url):
+
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
