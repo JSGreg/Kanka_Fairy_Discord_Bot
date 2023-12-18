@@ -37,7 +37,14 @@ async def on_ready():
 # TODO
 @bot.tree.command(name = "hello")
 async def hello (interaction: discord.Interaction):
+    # print(api_call(user_name=os.getenv('pom_pom_pom_TOKEN')))
     await interaction.response.send_message(f"Hi {interaction.user.mention}!")
+
+#TODO
+@bot.tree.command(name = "flirt")
+async def hello (interaction: discord.Interaction):
+    await interaction.response.send_message(f"Hi {interaction.user.mention}!")
+
 
 # TODO
 @bot.tree.command(name = "map")
@@ -69,12 +76,22 @@ async def note (interaction: discord.Interaction, note_name: str):
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
     serverID = get_campaignID_by_name(interaction) + "/"
-    character_name = character_name + "/"
+    entity_type = "entities?name=" + character_name 
 
     # returns dict
-    char_info = api_call(interaction.user.name, serverID, character_name)
-    print("DEBUG MESSAGE: \n" + char_info)
-    await interaction.response.send_message(char_info)
+    char_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    if "error" in char_info:
+        print(char_info)
+        # await interaction.response.send_message(char_info["error"])
+        await interaction.response.send_message("There was an error")
+        return
+
+    #TODO use entity to search and filter then use character/quest/ect to find specific entity and format from there
+    print(char_info)
+    print(char_info["data"][0]["id"])
+    print(char_info["data"][0]["name"])
+    message = "Character Name: " + char_info["data"][0]["name"] + "Character id: " + str(char_info["data"][0]["id"])
+    await interaction.response.send_message(message)
     return
 
     # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
@@ -88,10 +105,10 @@ async def character (interaction: discord.Interaction, character_name:str):
 # return campaignID
 
 def get_campaignID_by_name(interaction:discord.Interaction):
-    kanka_info = api_call(os.getenv(interaction.user.name + '_TOKEN'))
+    token = os.getenv(interaction.user.name + '_TOKEN')
+    kanka_info = api_call(token)
     
     # Loops thorugh dict and matches server to campaign 
-    # returns campaignID
     for x in kanka_info["data"]:
         if (interaction.guild.name == x["name"]):
             # print ("this is the kanka campaign:" + x["name"])
@@ -104,15 +121,15 @@ def get_campaignID_by_name(interaction:discord.Interaction):
 
 # May need to make a seperate api call for entities and characters
 # ^  Don't forget that all endpoints documented here need to be prefixed with "1.0/campaigns/{campaign.id}/."
-def api_call (user_name, campaign_id = "", entity = ""):
-    url = REQUEST_PATH + "campaigns/" + campaign_id + entity # here we add variable to specific sections? can add campaign id to the end of url to specify among every campaign stored on kanka
-
+def api_call (token, campaign_id = "", entity_type = "", entity_name =""):
+    url = REQUEST_PATH + "campaigns/" + campaign_id + entity_type + entity_name # here we add variable to specific sections? can add campaign id to the end of url to specify among every campaign stored on kanka
+    # url = "https://api.kanka.io/1.0/campaigns/176953/characters/3952731"
     print (url)
     
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Bearer ' + user_name
+        'Authorization': 'Bearer ' + token
     }
 
     response = requests.request("GET", url, headers=headers)
