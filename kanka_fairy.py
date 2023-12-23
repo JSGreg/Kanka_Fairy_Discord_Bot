@@ -44,9 +44,20 @@ async def hello (interaction: discord.Interaction):
 
 
 # TODO
-@bot.tree.command(name = "map")
-@app_commands.describe(map_name = "Map name")
-async def kmap (interaction: discord.Interaction, map_name:str):
+@bot.tree.command(name = "map", description="Test")
+# @app_commands.describe(map_name = "Map name")
+async def kmap (interaction: discord.Interaction):
+    await interaction.response.defer()
+    serverID = get_campaignID_by_name(interaction) + "/"
+    entity_type = "maps/"
+
+    map_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    map_url = map_info["data"][0]["image_full"]
+    kanka_url = map_info["data"][0]["urls"]["view"]
+
+    await interaction.followup.send("" + map_url)
+    await interaction.followup.send("Kanka Link: " + kanka_url)
+
     return
 
 # TODO
@@ -59,6 +70,34 @@ async def location (interaction: discord.Interaction, loc_name: str):
 @bot.tree.command(name = "journal")
 @app_commands.describe(journal_name = "Journal name")
 async def journal (interaction: discord.Interaction, journal_name: str):
+    await interaction.response.defer()
+    serverID = get_campaignID_by_name(interaction) + "/"
+    entity_type = "entities?name=" + journal_name
+
+    # returns dict
+    journal_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+
+    if len(journal_info) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if len(journal_info["data"]) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if "error" in journal_info:
+        await interaction.followup.send("Output Error")
+        return
+    
+    if journal_info["data"][0]["type"] != "journal":
+        await interaction.followup.send("No journals found using input '" + journal_name + "'")
+        return
+
+    journal_url = journal_info["data"][0]["urls"]["view"]
+    journal_name = journal_info["data"][0]["name"]
+    message = "# " + journal_name + "\n" + journal_url
+    await interaction.followup.send(message)
+    
     return
 
 # TODO
@@ -67,6 +106,24 @@ async def journal (interaction: discord.Interaction, journal_name: str):
 async def note (interaction: discord.Interaction, note_name: str):
     return
 
+# TODO
+@bot.tree.command(name = "music", description="Brings up music")
+# @app_commands.describe(map_name = "Map name")
+async def music (interaction: discord.Interaction):
+    await interaction.response.send_message("Music?")
+
+    # await interaction.response.defer()
+    # serverID = get_campaignID_by_name(interaction) + "/"
+    # entity_type = "maps/"
+
+    # map_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    # map_url = map_info["data"][0]["image_full"]
+    # kanka_url = map_info["data"][0]["urls"]["view"]
+
+    # await interaction.followup.send("" + map_url)
+    # await interaction.followup.send("Kanka Link: " + kanka_url)
+
+    return
 # TODO
 @bot.tree.command(name = "character")
 @app_commands.describe(character_name = "Character name")
@@ -77,10 +134,21 @@ async def character (interaction: discord.Interaction, character_name:str):
 
     # returns dict
     char_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+
+    if len(char_info) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if len(char_info["data"]) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
     if "error" in char_info:
-        print(char_info)
-        await interaction.response.send_message(char_info["error"])
-        # await interaction.response.send_message("There was an error")
+        await interaction.followup.send("Output Error")
+        return
+    
+    if char_info["data"][0]["type"] != "character":
+        await interaction.followup.send("No characters found using input '" + character_name + "'")
         return
 
     print(char_info)
@@ -103,10 +171,6 @@ async def character (interaction: discord.Interaction, character_name:str):
     # ./campaigns/{id} dict syntax "kanka_info[data][name]"
     # Can use this to verify which campaign player is in by server
     # await message.channel.send(server ["data"][0]["id"])
-
-# TODO Make a function for null error checking
-def is_null(value):
-    return
 
 # Get Kanka server by name, return campaignID
 def get_campaignID_by_name(interaction:discord.Interaction):
