@@ -44,7 +44,7 @@ async def hello (interaction: discord.Interaction):
 
 
 # TODO
-@bot.tree.command(name = "map", description="Test")
+@bot.tree.command(name = "map", description="Bring up the map. No Input needed")
 # @app_commands.describe(map_name = "Map name")
 async def kmap (interaction: discord.Interaction):
     await interaction.response.defer()
@@ -67,7 +67,7 @@ async def location (interaction: discord.Interaction, loc_name: str):
     return
 
 # TODO
-@bot.tree.command(name = "journal")
+@bot.tree.command(name = "journal", description="Search by name")
 @app_commands.describe(journal_name = "Journal name")
 async def journal (interaction: discord.Interaction, journal_name: str):
     await interaction.response.defer()
@@ -93,6 +93,7 @@ async def journal (interaction: discord.Interaction, journal_name: str):
         await interaction.followup.send("No journals found using input '" + journal_name + "'")
         return
 
+    print(journal_info)
     journal_url = journal_info["data"][0]["urls"]["view"]
     journal_name = journal_info["data"][0]["name"]
     message = "# " + journal_name + "\n" + journal_url
@@ -106,24 +107,33 @@ async def journal (interaction: discord.Interaction, journal_name: str):
 async def note (interaction: discord.Interaction, note_name: str):
     return
 
-# TODO
-@bot.tree.command(name = "music", description="Brings up music")
-# @app_commands.describe(map_name = "Map name")
-async def music (interaction: discord.Interaction):
-    await interaction.response.send_message("Music?")
+# # TODO Can not complete due to API problems
+# @bot.tree.command(name = "music", description="Brings up music")
+# @app_commands.describe(music_name = "Music Category")
+# async def music (interaction: discord.Interaction, music_name:str):
+#     await interaction.response.send_message("Music?")
 
-    # await interaction.response.defer()
-    # serverID = get_campaignID_by_name(interaction) + "/"
-    # entity_type = "maps/"
+#     # await interaction.response.defer()
+#     serverID = get_campaignID_by_name(interaction) + "/"
+#     entity_type = "notes/"
 
-    # map_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
-    # map_url = map_info["data"][0]["image_full"]
-    # kanka_url = map_info["data"][0]["urls"]["view"]
+#     music_url=""
+#     music_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+#     print(music_info)
 
-    # await interaction.followup.send("" + map_url)
-    # await interaction.followup.send("Kanka Link: " + kanka_url)
+#     for key in range(len(music_info["data"])):
+#         if music_info["data"][key]["name"] == "Music":
+#             music_url = music_info["data"][key]["urls"]["api"]
 
-    return
+#     # print(music_info["data"][1]["name"])
+#     print(music_url)
+
+#     music_response = api_call_url(os.getenv(interaction.user.name + "_TOKEN"), music_url)
+
+#     print(music_response)
+
+#     return
+
 # TODO
 @bot.tree.command(name = "character")
 @app_commands.describe(character_name = "Character name")
