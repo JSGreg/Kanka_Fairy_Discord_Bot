@@ -64,6 +64,35 @@ async def kmap (interaction: discord.Interaction):
 @bot.tree.command(name = "location")
 @app_commands.describe(loc_name = "Location name")
 async def location (interaction: discord.Interaction, loc_name: str):
+    await interaction.response.defer()
+    serverID = get_campaignID_by_name(interaction) + "/"
+    entity_type = "entities?name=" + loc_name
+
+    # returns dict
+    loc_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+
+    if len(loc_info) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if len(loc_info["data"]) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if "error" in loc_info:
+        await interaction.followup.send("Output Error")
+        return
+    
+    if loc_info["data"][0]["type"] != "journal":
+        await interaction.followup.send("No locations found using input '" + loc_name + "'")
+        return
+
+    print(loc_info)
+    loc_url = loc_info["data"][0]["urls"]["view"]
+    loc_name = loc_info["data"][0]["name"]
+    message = "# " + loc_name + "\n" + loc_url
+    await interaction.followup.send(message)
+    
     return
 
 # TODO
