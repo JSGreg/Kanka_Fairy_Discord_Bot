@@ -83,7 +83,7 @@ async def location (interaction: discord.Interaction, loc_name: str):
         await interaction.followup.send("Output Error")
         return
     
-    if loc_info["data"][0]["type"] != "journal":
+    if loc_info["data"][0]["type"] != "location":
         await interaction.followup.send("No locations found using input '" + loc_name + "'")
         return
 
@@ -134,6 +134,34 @@ async def journal (interaction: discord.Interaction, journal_name: str):
 @bot.tree.command(name = "note")
 @app_commands.describe(note_name = "Note name")
 async def note (interaction: discord.Interaction, note_name: str):
+    await interaction.response.defer()
+    serverID = get_campaignID_by_name(interaction) + "/"
+    entity_type = "entities?name=" + note_name
+
+    note_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+
+    if len(note_info) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if len(note_info["data"]) == 0:
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        return
+    
+    if "error" in note_info:
+        await interaction.followup.send("Output Error")
+        return
+    
+    if note_info["data"][0]["type"] != "note":
+        await interaction.followup.send("No note found using input '" + note_name + "'")
+        return
+
+    print(note_info)
+    note_url = note_info["data"][0]["urls"]["view"]
+    note_name = note_info["data"][0]["name"]
+    message = "# " + note_name + "\n" + note_url
+    await interaction.followup.send(message)
+
     return
 
 # # TODO Can not complete due to API problems
