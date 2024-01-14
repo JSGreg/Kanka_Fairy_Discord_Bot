@@ -4,6 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 import os
 import requests
+import re
 
 
 # TODO
@@ -19,6 +20,12 @@ REQUEST_PATH = "https://api.kanka.io/1.0/"
 MSG_ENTITY_NOT_FOUND = "Entity not found."
 MSG_REQUIRE_TOKEN = "Please provide token"
 MSG_NO_MATCHING_CAMPAIGN = "Found no matching campaign. \nPlease check that server matches Kanka campaign"
+REGEX_P = '<p>|</p>'
+REGEX_I = '<i>|</i>'
+REGEX_B = '<b>|</b>'
+REGEX_HR = '<hr>'
+REGEX_BR = '<br>'
+REGEX_BRACKET = '\[.*:.*\],'
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -196,6 +203,7 @@ async def note (interaction: discord.Interaction, note_name: str):
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
     await interaction.response.defer()
+    message = "N/a"
     serverID = get_campaignID_by_name(interaction) + "/"
     entity_type = "entities?name=" + character_name 
 
@@ -221,7 +229,6 @@ async def character (interaction: discord.Interaction, character_name:str):
     print(char_info)
     print(char_info["data"][0]["id"])
     print(char_info["data"][0]["name"])
-    
     entity_type = "character/"
 
     # Can get the api url for charactes from the entities api response
@@ -229,9 +236,37 @@ async def character (interaction: discord.Interaction, character_name:str):
 
     print(char_response)
 
-    message = "# " + char_response["data"]["name"] + "\n" + "## " + "Title_here" + "\n" + char_response["data"]["urls"]["view"] + "\n" + char_response["data"]["image_full"] + "\nPrivacy: " + str(char_response["data"]["is_private"])
-    print(message)
-    await interaction.followup.send(message)
+    # message = "# " + char_response["data"]["name"] + "\n" + "## " + "Title_here" + "\n" + char_response["data"]["urls"]["view"] + "\n" + char_response["data"]["image_full"] + "\nPrivacy: " + str(char_response["data"]["is_private"])
+    
+    # Parses HTML tags out of entries
+
+    entry = char_response["data"]["entry"]
+    print("Entry Before" + entry)
+
+
+    if not entry == None:
+        entry = re.sub(REGEX_P, "", entry)
+        entry = re.sub(REGEX_BRACKET, "", entry)
+        entry = re.sub(REGEX_I, "_", entry)
+        entry = re.sub(REGEX_B, "**", entry)
+        entry = re.sub(REGEX_BR, "\n\n", entry)
+        entry = re.sub(REGEX_HR, "\n\n", entry)
+
+        print("Entry After" + entry)
+
+    else:
+        entry = "N/a"
+    # api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
+    embed = discord.Embed(title= char_response["data"]["name"], url=char_response["data"]["urls"]["view"])
+    embed.add_field(name="Entry", value = entry, inline = True)
+    embed.set_image(url=char_response["data"]["image_full"])
+
+
+
+    await interaction.followup.send(embed=embed)
+    
+    # print(message)
+    # await interaction.followup.send(message)
     return
 
     # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
