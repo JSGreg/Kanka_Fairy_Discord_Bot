@@ -20,12 +20,12 @@ REQUEST_PATH = "https://api.kanka.io/1.0/"
 MSG_ENTITY_NOT_FOUND = "Entity not found."
 MSG_REQUIRE_TOKEN = "Please provide token"
 MSG_NO_MATCHING_CAMPAIGN = "Found no matching campaign. \nPlease check that server matches Kanka campaign"
-REGEX_P = '<p>|</p>'
-REGEX_I = '<i>|</i>'
-REGEX_B = '<b>|</b>'
-REGEX_HR = '<hr>'
+REGEX_P = '<p.*?>|</p>'
+REGEX_I = '<i.*?>|</i>'
+REGEX_B = '<b.*?>|</b>'
+REGEX_HR = '<hr.*?>'
 REGEX_BR = '<br>'
-REGEX_BRACKET = '\[.*:.*\],'
+REGEX_BRACKET = r'\[.*?:.*?\|.*?\],|\[.*?:.*?\],'
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -246,9 +246,9 @@ async def character (interaction: discord.Interaction, character_name:str):
 
     if not entry == None:
         entry = re.sub(REGEX_P, "", entry)
-        entry = re.sub(REGEX_BRACKET, "", entry)
         entry = re.sub(REGEX_I, "_", entry)
         entry = re.sub(REGEX_B, "**", entry)
+        entry = re.sub(REGEX_BRACKET, "", entry)
         entry = re.sub(REGEX_BR, "\n\n", entry)
         entry = re.sub(REGEX_HR, "\n\n", entry)
 
