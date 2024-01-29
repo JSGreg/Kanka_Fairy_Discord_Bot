@@ -25,7 +25,12 @@ REGEX_I = '<i.*?>|</i>'
 REGEX_B = '<b.*?>|</b>'
 REGEX_HR = '<hr.*?>'
 REGEX_BR = '<br>'
-REGEX_BRACKET = r'\[.*?:.*?\|.*?\],|\[.*?:.*?\],'
+REGEX_ALL = r'<[^>]+>'
+# REGEX_BRACKET = r'\[.*?:.*?\|.*?\],|\[.*?:.*?\],'
+REGEX_BRACKET = r'\[.*?:.*?\|'
+REGEX_NBSP = r'(&nbsp;)'
+# |\s-(&nbsp;)?\s*)'
+
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -226,38 +231,48 @@ async def character (interaction: discord.Interaction, character_name:str):
         await interaction.followup.send("No characters found using input '" + character_name + "'")
         return
 
-    print(char_info)
-    print(char_info["data"][0]["id"])
-    print(char_info["data"][0]["name"])
+    # print(char_info)
+    # print(char_info["data"][0]["id"])
+    # print(char_info["data"][0]["name"])
     entity_type = "character/"
 
     # Can get the api url for charactes from the entities api response
     char_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
 
-    print(char_response)
+    # print(char_response)
 
     # message = "# " + char_response["data"]["name"] + "\n" + "## " + "Title_here" + "\n" + char_response["data"]["urls"]["view"] + "\n" + char_response["data"]["image_full"] + "\nPrivacy: " + str(char_response["data"]["is_private"])
     
     # Parses HTML tags out of entries
 
-    entry = char_response["data"]["entry"]
+    entry = char_response["data"]["entry_parsed"]
+    title = char_response["data"]["title"]
     print("Entry Before" + entry)
 
 
     if not entry == None:
-        entry = re.sub(REGEX_P, "", entry)
-        entry = re.sub(REGEX_I, "_", entry)
-        entry = re.sub(REGEX_B, "**", entry)
         entry = re.sub(REGEX_BRACKET, "", entry)
+        entry = re.sub(REGEX_I, "_ ", entry)
         entry = re.sub(REGEX_BR, "\n\n", entry)
+        entry = re.sub(REGEX_B, "** ", entry)
         entry = re.sub(REGEX_HR, "\n\n", entry)
+        entry = re.sub(REGEX_P, "", entry)
+        entry = re.sub(REGEX_ALL, "", entry)
+        entry = re.sub(REGEX_NBSP, " ", entry)
 
         print("Entry After" + entry)
 
     else:
         entry = "N/a"
+
+    if title == None:
+        title = ""
+    else:
+        title = "**" + title + "**"
     # api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
     embed = discord.Embed(title= char_response["data"]["name"], url=char_response["data"]["urls"]["view"])
+    embed.add_field(name="", value=title, inline=False)
+
     embed.add_field(name="Entry", value = entry, inline = True)
     embed.set_image(url=char_response["data"]["image_full"])
 
