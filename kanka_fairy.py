@@ -1,4 +1,4 @@
-from logging import info
+import random
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -8,12 +8,7 @@ import re
 
 
 # TODO
-# Message for generating tokens 
-# Ping Kanka
-# Get server specific info by name
-# Get kanka campaign by name not id (Needs to be a special funciton)
 # Search Function (https://app.kanka.io/api-docs/1.0/entities)
-# Set variables earlier 
 
 
 REQUEST_PATH = "https://api.kanka.io/1.0/"
@@ -48,13 +43,12 @@ async def hello (interaction: discord.Interaction):
     await interaction.response.send_message(f"Hi {interaction.user.mention}!")
 
 #TODO
-@bot.tree.command(name = "flirt")
-async def hello (interaction: discord.Interaction):
-    await interaction.response.send_message(f"Hi {interaction.user.mention}!")
-
+@bot.tree.command(name = "flirt", description= "You're interested in me!? Oh you meant t̵̡̡̨̜̺͖̟̖̋̈͌͂̓̈́͊̃ḩ̸̫̼̠̘̪͔̮́͆̊̌͑̽̀̕̚͜͠ͅę̴̺̫̠̊̆̓͊͆̎̌̈́̚̕̕m̵̮͓̙͇͔̖̰͍͓̋͆̏͋͂͋̈́͘͝ ... ok no matter.")
+async def flirt (interaction: discord.Interaction):
+    await interaction.response.send_message(rand_line("flirt.txt"))
 
 # TODO
-@bot.tree.command(name = "map", description="Bring up the map. No Input needed")
+@bot.tree.command(name = "map", description="It's a bit dusty isn't it.")
 # @app_commands.describe(map_name = "Map name")
 async def kmap (interaction: discord.Interaction):
     await interaction.response.defer()
@@ -71,7 +65,7 @@ async def kmap (interaction: discord.Interaction):
     return
 
 # TODO
-@bot.tree.command(name = "location")
+@bot.tree.command(name = "location", description="Oh yeah I've been there!")
 @app_commands.describe(loc_name = "Location name")
 async def location (interaction: discord.Interaction, loc_name: str):
     await interaction.response.defer()
@@ -111,7 +105,7 @@ async def location (interaction: discord.Interaction, loc_name: str):
     return
 
 # TODO
-@bot.tree.command(name = "journal", description="Search by name")
+@bot.tree.command(name = "journal", description="No no! That's mine give it back!!!")
 @app_commands.describe(journal_name = "Journal name")
 async def journal (interaction: discord.Interaction, journal_name: str):
     await interaction.response.defer()
@@ -151,7 +145,7 @@ async def journal (interaction: discord.Interaction, journal_name: str):
     return
 
 # TODO
-@bot.tree.command(name = "note")
+@bot.tree.command(name = "note", description="Peeking now? Scandalous!")
 @app_commands.describe(note_name = "Note name")
 async def note (interaction: discord.Interaction, note_name: str):
     await interaction.response.defer()
@@ -218,7 +212,7 @@ async def note (interaction: discord.Interaction, note_name: str):
 #     return
 
 # TODO
-@bot.tree.command(name = "character")
+@bot.tree.command(name = "character", description="Are you looking for me?")
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
     await interaction.response.defer()
@@ -270,9 +264,9 @@ def body_parser(entry, title=""):
     if not entry == None:
         entry = re.sub(REGEX_BRACKET, "", entry)
         entry = re.sub(REGEX_I, "_ ", entry)
-        entry = re.sub(REGEX_BR, "\n\n ", entry)
+        entry = re.sub(REGEX_BR, "\n\n", entry)
         entry = re.sub(REGEX_B, "** ", entry)
-        entry = re.sub(REGEX_HR, "\n\n ", entry)
+        entry = re.sub(REGEX_HR, "\n\n", entry)
         entry = re.sub(REGEX_P, " ", entry)
         entry = re.sub(REGEX_ALL, "", entry)
         entry = re.sub(REGEX_NBSP, " ", entry)
@@ -327,5 +321,13 @@ def api_call_url(token, url):
     response = response.json()
 
     return response 
+
+def rand_line(file_name): 
+    with open(file_name, 'r', encoding="utf-8") as file: 
+        lines = file.readlines() 
+        random_index = random.randrange(len(lines))
+        random_line = lines[random_index] 
+        random_line = "Ok fine then. Line " + str(random_index) + ": " + random_line
+    return random_line 
 
 bot.run(os.getenv('TOKEN'))
