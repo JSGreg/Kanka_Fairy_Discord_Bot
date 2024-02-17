@@ -26,10 +26,8 @@ REGEX_B = '<b.*?>|</b>'
 REGEX_HR = '<hr.*?>'
 REGEX_BR = '<br>'
 REGEX_ALL = r'<[^>]+>'
-# REGEX_BRACKET = r'\[.*?:.*?\|.*?\],|\[.*?:.*?\],'
 REGEX_BRACKET = r'\[.*?:.*?\|'
 REGEX_NBSP = r'(&nbsp;)'
-# |\s-(&nbsp;)?\s*)'
 
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
@@ -98,13 +96,18 @@ async def location (interaction: discord.Interaction, loc_name: str):
     if loc_info["data"][0]["type"] != "location":
         await interaction.followup.send("No locations found using input '" + loc_name + "'")
         return
-
-    print(loc_info)
-    loc_url = loc_info["data"][0]["urls"]["view"]
-    loc_name = loc_info["data"][0]["name"]
-    message = "# " + loc_name + "\n" + loc_url
-    await interaction.followup.send(message)
     
+    loc_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), loc_info["data"][0]["urls"]["api"])
+
+    loc_name = loc_response["data"]["name"]
+    loc_url = loc_response["data"]["urls"]["view"]
+    entry = loc_response["data"]["entry_parsed"]
+    image_url = loc_response["data"]["image_full"]
+
+    entry = body_parser(entry)
+    embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, title= "", image_url=image_url)
+
+    await interaction.followup.send(embed=embed)
     return
 
 # TODO
@@ -134,12 +137,17 @@ async def journal (interaction: discord.Interaction, journal_name: str):
         await interaction.followup.send("No journals found using input '" + journal_name + "'")
         return
 
-    print(journal_info)
-    journal_url = journal_info["data"][0]["urls"]["view"]
-    journal_name = journal_info["data"][0]["name"]
-    message = "# " + journal_name + "\n" + journal_url
-    await interaction.followup.send(message)
-    
+    journal_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), journal_info["data"][0]["urls"]["api"])
+
+    journal_name = journal_response["data"]["name"]
+    journal_url = journal_response["data"]["urls"]["view"]
+    entry = journal_response["data"]["entry_parsed"]
+    image_url = journal_response["data"]["image_full"]
+
+    entry = body_parser(entry)
+    embed = dis_card(name=journal_name, ent_url=journal_url, entry=entry, title= "", image_url=image_url)
+
+    await interaction.followup.send(embed=embed)
     return
 
 # TODO
@@ -176,18 +184,10 @@ async def note (interaction: discord.Interaction, note_name: str):
     entry = note_response["data"]["entry_parsed"]
     image_url = note_response["data"]["image_full"]
 
-
-    print("Entry Before" + entry)
-
     entry = body_parser(entry)
-
     embed = dis_card(name=note_name, ent_url=note_url, entry=entry, title= "", image_url=image_url)
 
     await interaction.followup.send(embed=embed)
-
-
-    # await interaction.followup.send(message)
-
     return
 
 # # TODO Can not complete due to API problems
@@ -245,40 +245,24 @@ async def character (interaction: discord.Interaction, character_name:str):
         await interaction.followup.send("No characters found using input '" + character_name + "'")
         return
 
-    # entity_type = "character/"
-
     # Can get the api url for charactes from the entities api response
     char_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
 
-    # print("Entry Before" + entry)
-
-   
-    # Parses HTML tags out of entries
     entry = char_response["data"]["entry_parsed"]
     title = char_response["data"]["title"]
     name = char_response["data"]["name"]
     char_url = char_response["data"]["urls"]["view"]
     image_url=char_response["data"]["image_full"]
 
-
-    entry, title = body_parser(entry, title)
-
+    entry = body_parser(entry, title)
     embed = dis_card(name, char_url, entry, title, image_url)
     await interaction.followup.send(embed=embed)
 
     return
 
-    # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
-    # ./campaigns/{id} dict syntax "kanka_info[data][name]"
-    # Can use this to verify which campaign player is in by server
-    # await message.channel.send(server ["data"][0]["id"])
-
 
 def dis_card(name, ent_url, entry, title="", image_url=""):
-    embed = discord.Embed(title= name, url=ent_url)
-    embed.add_field(name="", value=title, inline=False)
-
-    embed.add_field(name="Entry", value = entry, inline = True)
+    embed = discord.Embed(title= name, url=ent_url, description=entry)
     embed.set_image(url=image_url)
     return embed
 
@@ -286,23 +270,22 @@ def body_parser(entry, title=""):
     if not entry == None:
         entry = re.sub(REGEX_BRACKET, "", entry)
         entry = re.sub(REGEX_I, "_ ", entry)
-        entry = re.sub(REGEX_BR, "\n\n", entry)
+        entry = re.sub(REGEX_BR, "\n\n ", entry)
         entry = re.sub(REGEX_B, "** ", entry)
-        entry = re.sub(REGEX_HR, "\n\n", entry)
-        entry = re.sub(REGEX_P, "", entry)
+        entry = re.sub(REGEX_HR, "\n\n ", entry)
+        entry = re.sub(REGEX_P, " ", entry)
         entry = re.sub(REGEX_ALL, "", entry)
         entry = re.sub(REGEX_NBSP, " ", entry)
-
-        print("Entry After" + entry)
     else:
         entry = "N/a"
     
-    if title == None:
+    if title == "":
         title = ""
     else:
-        title = "**" + title + "**"
+        title = "**" + title + "**\n\n"
+        entry = title + entry
 
-    return entry, title
+    return entry
 
 # Get Kanka server by name, return campaignID
 def get_campaignID_by_name(interaction:discord.Interaction):
