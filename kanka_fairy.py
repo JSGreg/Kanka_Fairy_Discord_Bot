@@ -167,12 +167,26 @@ async def note (interaction: discord.Interaction, note_name: str):
     if note_info["data"][0]["type"] != "note":
         await interaction.followup.send("No note found using input '" + note_name + "'")
         return
+    
+    note_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), note_info["data"][0]["urls"]["api"])
 
-    print(note_info)
-    note_url = note_info["data"][0]["urls"]["view"]
-    note_name = note_info["data"][0]["name"]
-    message = "# " + note_name + "\n" + note_url
-    await interaction.followup.send(message)
+    # print(note_response)
+    note_name = note_response["data"]["name"]
+    note_url = note_response["data"]["urls"]["view"]
+    entry = note_response["data"]["entry_parsed"]
+    image_url = note_response["data"]["image_full"]
+
+
+    print("Entry Before" + entry)
+
+    entry = body_parser(entry)
+
+    embed = dis_card(name=note_name, ent_url=note_url, entry=entry, title= "", image_url=image_url)
+
+    await interaction.followup.send(embed=embed)
+
+
+    # await interaction.followup.send(message)
 
     return
 
@@ -231,25 +245,44 @@ async def character (interaction: discord.Interaction, character_name:str):
         await interaction.followup.send("No characters found using input '" + character_name + "'")
         return
 
-    # print(char_info)
-    # print(char_info["data"][0]["id"])
-    # print(char_info["data"][0]["name"])
-    entity_type = "character/"
+    # entity_type = "character/"
 
     # Can get the api url for charactes from the entities api response
     char_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
 
-    # print(char_response)
+    # print("Entry Before" + entry)
 
-    # message = "# " + char_response["data"]["name"] + "\n" + "## " + "Title_here" + "\n" + char_response["data"]["urls"]["view"] + "\n" + char_response["data"]["image_full"] + "\nPrivacy: " + str(char_response["data"]["is_private"])
-    
+   
     # Parses HTML tags out of entries
-
     entry = char_response["data"]["entry_parsed"]
     title = char_response["data"]["title"]
-    print("Entry Before" + entry)
+    name = char_response["data"]["name"]
+    char_url = char_response["data"]["urls"]["view"]
+    image_url=char_response["data"]["image_full"]
 
 
+    entry, title = body_parser(entry, title)
+
+    embed = dis_card(name, char_url, entry, title, image_url)
+    await interaction.followup.send(embed=embed)
+
+    return
+
+    # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
+    # ./campaigns/{id} dict syntax "kanka_info[data][name]"
+    # Can use this to verify which campaign player is in by server
+    # await message.channel.send(server ["data"][0]["id"])
+
+
+def dis_card(name, ent_url, entry, title="", image_url=""):
+    embed = discord.Embed(title= name, url=ent_url)
+    embed.add_field(name="", value=title, inline=False)
+
+    embed.add_field(name="Entry", value = entry, inline = True)
+    embed.set_image(url=image_url)
+    return embed
+
+def body_parser(entry, title=""):
     if not entry == None:
         entry = re.sub(REGEX_BRACKET, "", entry)
         entry = re.sub(REGEX_I, "_ ", entry)
@@ -261,33 +294,15 @@ async def character (interaction: discord.Interaction, character_name:str):
         entry = re.sub(REGEX_NBSP, " ", entry)
 
         print("Entry After" + entry)
-
     else:
         entry = "N/a"
-
+    
     if title == None:
         title = ""
     else:
         title = "**" + title + "**"
-    # api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
-    embed = discord.Embed(title= char_response["data"]["name"], url=char_response["data"]["urls"]["view"])
-    embed.add_field(name="", value=title, inline=False)
 
-    embed.add_field(name="Entry", value = entry, inline = True)
-    embed.set_image(url=char_response["data"]["image_full"])
-
-
-
-    await interaction.followup.send(embed=embed)
-    
-    # print(message)
-    # await interaction.followup.send(message)
-    return
-
-    # ./campaigns endpoint dict syntax "kanka_info[data][campaign number][information]"
-    # ./campaigns/{id} dict syntax "kanka_info[data][name]"
-    # Can use this to verify which campaign player is in by server
-    # await message.channel.send(server ["data"][0]["id"])
+    return entry, title
 
 # Get Kanka server by name, return campaignID
 def get_campaignID_by_name(interaction:discord.Interaction):
