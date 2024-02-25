@@ -254,6 +254,16 @@ async def character (interaction: discord.Interaction, character_name:str):
 
     return
 
+@bot.tree.command(name = "talk", description="Shh!")
+@app_commands.describe(message = "Make a message")
+async def character (interaction: discord.Interaction, message:str):
+    print("Repeated message")
+    if (interaction.user.name == "pom_pom_pom"):
+        print ("I respond")
+        await interaction.response.send_message(str(message))
+    else:
+        await interaction.response.send_message("Sorry! Can't hear you !!!")
+    return
 
 def dis_card(name, ent_url, entry, title="", image_url=""):
     embed = discord.Embed(title= name, url=ent_url, description=entry)
