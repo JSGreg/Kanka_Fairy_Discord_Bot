@@ -23,7 +23,8 @@ REGEX_BR = '<br>'
 REGEX_ALL = r'<[^>]+>'
 REGEX_BRACKET = r'\[.*?:.*?\|'
 REGEX_NBSP = r'(&nbsp;)'
-
+MIRALL_KANKA = "Mysteries of Mirall"
+MIRALL_DISCORD = "Mirall Beach Academy"
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -76,11 +77,11 @@ async def location (interaction: discord.Interaction, loc_name: str):
     loc_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
 
     if len(loc_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Or check permisions.")
         return
     
     if len(loc_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Or check permisions.")
         return
     
     if "error" in loc_info:
@@ -115,16 +116,17 @@ async def journal (interaction: discord.Interaction, journal_name: str):
     # returns dict
     journal_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
 
+    print(journal_info)
     if len(journal_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Len = 0. Input: " + journal_name)
         return
     
     if len(journal_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data =0. Input: " + journal_name)
         return
     
     if "error" in journal_info:
-        await interaction.followup.send("Output Error")
+        await interaction.followup.send("Output Error. Input: " + journal_name)
         return
     
     if journal_info["data"][0]["type"] != "journal":
@@ -224,11 +226,11 @@ async def character (interaction: discord.Interaction, character_name:str):
     char_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
 
     if len(char_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? L" + character_name)
         return
     
     if len(char_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? D" + character_name)
         return
     
     if "error" in char_info:
@@ -298,9 +300,14 @@ def get_campaignID_by_name(interaction:discord.Interaction):
     
     # Loops thorugh dict and matches server to campaign 
     for x in kanka_info["data"]:
-        if (interaction.guild.name == x["name"]):
+        if (interaction.guild.name == MIRALL_DISCORD and str(x["name"]) == MIRALL_KANKA):
             campaignID = str(x["id"])
             return campaignID
+        elif (interaction.guild.name == x["name"]):
+            campaignID = str(x["id"])
+            return campaignID
+
+    print(MSG_NO_MATCHING_CAMPAIGN)
 
     return MSG_NO_MATCHING_CAMPAIGN
 
