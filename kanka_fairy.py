@@ -9,6 +9,10 @@ import re
 
 # TODO
 # Search Function (https://app.kanka.io/api-docs/1.0/entities)
+# Cache responses
+# Transfer page from one campaign to another
+# Show viewing perms
+# Make changes to viewing perms
 
 
 REQUEST_PATH = "https://api.kanka.io/1.0/"
