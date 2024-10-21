@@ -43,6 +43,16 @@ async def on_ready():
 
 # Slash command intergration
 # TODO
+# Turn Wakeup into cache
+# Can set up so that each campaign is in its own file and replaced as needed (could store some info as backups incase something goes wrong)
+# Figure out what the api actually has in it because the commands will have to be overhauled 
+# Worry about permissions who is allowed to access what can solve by binding discord user names to kanka stuff? see who has viewing permissions in each page?
+# if the entity does not exist update cache and try again? print error if still not there
+
+@bot.tree.command(name = "wakeup")
+async def wakeUp (interaction: discord.Interaction):
+    await interaction.response.send_message("Hmph fine! I'M U[P]. I'll spill the tea but not because you asked!!!! :anger:")
+
 @bot.tree.command(name = "hello")
 async def hello (interaction: discord.Interaction):
     await interaction.response.send_message(f"Hi {interaction.user.mention}!")
@@ -81,11 +91,11 @@ async def location (interaction: discord.Interaction, loc_name: str):
     loc_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
 
     if len(loc_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Or check permisions.")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + loc_name)
         return
     
     if len(loc_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Or check permisions.")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + loc_name)
         return
     
     if "error" in loc_info:
@@ -122,11 +132,11 @@ async def journal (interaction: discord.Interaction, journal_name: str):
 
     print(journal_info)
     if len(journal_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Len = 0. Input: " + journal_name)
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + journal_name)
         return
     
     if len(journal_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data =0. Input: " + journal_name)
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + journal_name)
         return
     
     if "error" in journal_info:
@@ -161,11 +171,11 @@ async def note (interaction: discord.Interaction, note_name: str):
     note_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
 
     if len(note_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + note_name)
         return
     
     if len(note_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?")
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + note_name)
         return
     
     if "error" in note_info:
@@ -230,11 +240,11 @@ async def character (interaction: discord.Interaction, character_name:str):
     char_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
 
     if len(char_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? L" + character_name)
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + character_name)
         return
     
     if len(char_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? D" + character_name)
+        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + character_name)
         return
     
     if "error" in char_info:
