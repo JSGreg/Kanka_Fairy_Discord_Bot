@@ -6,7 +6,8 @@ import os
 import requests
 import re
 import json
-
+import asyncio
+from pathlib import Path
 
 # TODO
 # Search Function (https://app.kanka.io/api-docs/1.0/entities)
@@ -44,66 +45,66 @@ async def on_ready():
 
 # Slash command intergration
 # TODO
-# Turn Wakeup into cache
 # Can set up so that each campaign is in its own file and replaced as needed (could store some info as backups incase something goes wrong)
 # Figure out what the api actually has in it because the commands will have to be overhauled 
 # Worry about permissions who is allowed to access what can solve by binding discord user names to kanka stuff? see who has viewing permissions in each page?
 # if the entity does not exist update cache and try again? print error if still not there
 
-# Make a list of each of the entity names 
-# Loop thorugh list and the relevent campaigns
-# loop through entity types
-# combine into one json
-# need to make a seperate json for each entity and each player
-# Storage shouldn't be too big dispite the inefficency 
-
-# Can store credentials in a dict?
-
+# Try optimise later
 @bot.tree.command(name = "wakeup")
 async def wakeUp (interaction: discord.Interaction):
     await interaction.response.defer()
     entity_type = ["characters", "locations", "journals", "notes"]
-    
-    # os.getenv(interaction.user.name + "_TOKEN"), serverID, "characters?page=" + str(page)
+    member_list = interaction.guild.members
     campaign_id = get_campaignID_by_name(interaction)
 
-    print(os.environ)
+    # print(os.getenv(discord.Client.users[0] + "_TOKEN"))
     # entity_type = "entities?name=" 
     # serverID = get_campaignID_by_name(interaction)+"/"
 
     # loop through pages and get each 
-    for players in os.getenv():
-        for type in entity_type:
-            page = 1
-            data = []
+    for members in member_list:
+        player = members.name + "_TOKEN"
+        if os.getenv(player) is not None:
+            for type in entity_type:
+                page = 1
+                data = []
+                print(members.name)
+                print(type)
+                while True: 
+                    url = f"{REQUEST_PATH}campaigns/{campaign_id}/{type}?page={page}"
 
-            while True: 
-                url = f"{REQUEST_PATH}campaigns/{campaign_id}/{type}?page={page}"
-                print (url)
-            
-                headers = {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + players
-                    # os.getenv(interaction.user.name + "_TOKEN")
-                }
-                response = requests.request("GET", url, headers=headers)
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer ' + os.getenv(player)
+                    }
+                    response = requests.request("GET", url, headers=headers)
 
-                if response.status_code != 200:
-                    print(f"Error: {response.status_code} - {response.text}")
-            
-                response = response.json()
-                # response = api_call(os.getenv(interaction.user.name + "_TOKEN"), serverID, "characters?page=" + str(page))
-                # data = response.json()
-                data.extend(response["data"])
-                # print (characters)
-                if response["links"]["next"] is None:
-                    print("Reached end of pages")
-                    break
+                    if response.status_code != 200:
+                        print(f"Error: {response.status_code} - {response.text}")
+                        break
 
-                page+=1
-            with open(f'Selesce\{players}\{type}.json', 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)   
+                    response = response.json()
+                    # print(response)
+                    data.extend(response["data"])
+
+                    if response["links"]["next"] is None:
+                        print("Reached end of pages")
+                        break
+
+                    page+=1
+
+                if not os.path.exists(f"./campaigns/{interaction.guild.name}/{members.name}"):
+                    os.makedirs(f"./campaigns/{interaction.guild.name}/{members.name}")
+                # loop = asyncio.get_event_loop()
+                # await loop.run_in_executor(None, lambda: json.dump(data, open(f'./campaigns/{interaction.guild.name}/{members.name}/{type}.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=4))
+                with open(f'./campaigns/{interaction.guild.name}/{members.name}/{type}.json', 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+
+                
+                await asyncio.sleep(0)         
+    print("Done")
     await interaction.followup.send("Hmph fine! I'M U[P]. I'll spill the tea but not because you asked!!!! :anger:")
     
 
