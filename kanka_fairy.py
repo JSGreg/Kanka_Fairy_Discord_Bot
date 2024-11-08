@@ -5,6 +5,7 @@ from discord.ext import commands
 import os
 import requests
 import re
+import json
 
 
 # TODO
@@ -49,9 +50,62 @@ async def on_ready():
 # Worry about permissions who is allowed to access what can solve by binding discord user names to kanka stuff? see who has viewing permissions in each page?
 # if the entity does not exist update cache and try again? print error if still not there
 
+# Make a list of each of the entity names 
+# Loop thorugh list and the relevent campaigns
+# loop through entity types
+# combine into one json
+# need to make a seperate json for each entity and each player
+# Storage shouldn't be too big dispite the inefficency 
+
+# Can store credentials in a dict?
+
 @bot.tree.command(name = "wakeup")
 async def wakeUp (interaction: discord.Interaction):
-    await interaction.response.send_message("Hmph fine! I'M U[P]. I'll spill the tea but not because you asked!!!! :anger:")
+    await interaction.response.defer()
+    entity_type = ["characters", "locations", "journals", "notes"]
+    
+    # os.getenv(interaction.user.name + "_TOKEN"), serverID, "characters?page=" + str(page)
+    campaign_id = get_campaignID_by_name(interaction)
+
+    print(os.environ)
+    # entity_type = "entities?name=" 
+    # serverID = get_campaignID_by_name(interaction)+"/"
+
+    # loop through pages and get each 
+    for players in os.getenv():
+        for type in entity_type:
+            page = 1
+            data = []
+
+            while True: 
+                url = f"{REQUEST_PATH}campaigns/{campaign_id}/{type}?page={page}"
+                print (url)
+            
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + players
+                    # os.getenv(interaction.user.name + "_TOKEN")
+                }
+                response = requests.request("GET", url, headers=headers)
+
+                if response.status_code != 200:
+                    print(f"Error: {response.status_code} - {response.text}")
+            
+                response = response.json()
+                # response = api_call(os.getenv(interaction.user.name + "_TOKEN"), serverID, "characters?page=" + str(page))
+                # data = response.json()
+                data.extend(response["data"])
+                # print (characters)
+                if response["links"]["next"] is None:
+                    print("Reached end of pages")
+                    break
+
+                page+=1
+            with open(f'Selesce\{players}\{type}.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)   
+    await interaction.followup.send("Hmph fine! I'M U[P]. I'll spill the tea but not because you asked!!!! :anger:")
+    
 
 @bot.tree.command(name = "hello")
 async def hello (interaction: discord.Interaction):
@@ -336,6 +390,10 @@ def api_call (token, campaign_id = "", entity_type = "", entity_name =""):
     }
 
     response = requests.request("GET", url, headers=headers)
+
+    if response.status_code != 200:
+        print(f"Error: {response.status_code} - {response.text}")
+    
     response = response.json()
 
     return response 
