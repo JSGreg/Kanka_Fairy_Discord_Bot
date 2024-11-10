@@ -29,8 +29,10 @@ REGEX_BR = '<br>'
 REGEX_ALL = r'<[^>]+>'
 REGEX_BRACKET = r'\[.*?:.*?\|'
 REGEX_NBSP = r'(&nbsp;)'
+REGEX_STRIKE = '<strike>|</strike>'
 MIRALL_KANKA = "Mysteries of Mirall"
 MIRALL_DISCORD = "Mirall Beach Academy"
+ENTITY_TYPE = ["characters", "locations", "journals", "notes"]
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -54,7 +56,7 @@ async def on_ready():
 @bot.tree.command(name = "wakeup")
 async def wakeUp (interaction: discord.Interaction):
     await interaction.response.defer()
-    entity_type = ["characters", "locations", "journals", "notes"]
+    
     member_list = interaction.guild.members
     campaign_id = get_campaignID_by_name(interaction)
 
@@ -66,7 +68,7 @@ async def wakeUp (interaction: discord.Interaction):
     for members in member_list:
         player = members.name + "_TOKEN"
         if os.getenv(player) is not None:
-            for type in entity_type:
+            for type in ENTITY_TYPE:
                 page = 1
                 data = []
                 print(members.name)
@@ -139,39 +141,63 @@ async def kmap (interaction: discord.Interaction):
 @app_commands.describe(loc_name = "Location name")
 async def location (interaction: discord.Interaction, loc_name: str):
     await interaction.response.defer()
-    serverID = get_campaignID_by_name(interaction) + "/"
-    entity_type = "entities?name=" + loc_name
 
-    # returns dict
-    loc_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    with open(f'./campaigns/{interaction.guild.name}/{interaction.user.name}/{ENTITY_TYPE[1]}.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        embed = None
 
-    if len(loc_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + loc_name)
-        return
+        # print("All: " + data)
+        for entries in range(len(data)):
+            print("Data: " + data[entries]["name"])
+            print(re.search(loc_name, data[entries]["name"], re.IGNORECASE | re.UNICODE))
+
+            if re.search(loc_name, data[entries]["name"], re.IGNORECASE):
+                loc_name, entry, loc_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
+
+                entry = body_parser(entry)
+                embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, title= "", image_url=image_url)
+                break
+        print(embed)
+        if embed is None:
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + loc_name)
+        await interaction.followup.send(embed=embed)
+        # if len(data) == 0:
+        #     await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + loc_name)
+        #     return
+        
+        # if len(data["data"]) == 0:
+        #     await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + loc_name)
+        #     return
+        
+        # if "error" in loc_info:
+        #     await interaction.followup.send("Output Error")
+        #     return
+        
+        # if loc_info["data"][0]["type"] != "location":
+        #     await interaction.followup.send("No locations found using input '" + loc_name + "'")
+        #     return
     
-    if len(loc_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + loc_name)
-        return
-    
-    if "error" in loc_info:
-        await interaction.followup.send("Output Error")
-        return
-    
-    if loc_info["data"][0]["type"] != "location":
-        await interaction.followup.send("No locations found using input '" + loc_name + "'")
-        return
-    
-    loc_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), loc_info["data"][0]["urls"]["api"])
+  
+    # await interaction.followup.send("No")
 
-    loc_name = loc_response["data"]["name"]
-    loc_url = loc_response["data"]["urls"]["view"]
-    entry = loc_response["data"]["entry_parsed"]
-    image_url = loc_response["data"]["image_full"]
 
-    entry = body_parser(entry)
-    embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, title= "", image_url=image_url)
 
-    await interaction.followup.send(embed=embed)
+    # serverID = get_campaignID_by_name(interaction) + "/"
+    # entity_type = "entities?name=" + loc_name
+
+    # # returns dict
+    # loc_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+
+
+    
+    # loc_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), loc_info["data"][0]["urls"]["api"])
+
+    # loc_name = loc_response["data"]["name"]
+    # loc_url = loc_response["data"]["urls"]["view"]
+    # entry = loc_response["data"]["entry_parsed"]
+    # image_url = loc_response["data"]["image_full"]
+
+ 
     return
 
 # TODO
@@ -344,10 +370,11 @@ def dis_card(name, ent_url, entry, title="", image_url=""):
 def body_parser(entry, title=""):
     if not entry == None:
         entry = re.sub(REGEX_BRACKET, "", entry)
-        entry = re.sub(REGEX_I, "_ ", entry)
+        entry = re.sub(REGEX_I, "__ ", entry)
         entry = re.sub(REGEX_BR, "\n\n", entry)
         entry = re.sub(REGEX_B, "** ", entry)
         entry = re.sub(REGEX_HR, "\n\n", entry)
+        entry = re.sub(REGEX_STRIKE, "~~ ", entry)
         entry = re.sub(REGEX_P, " ", entry)
         entry = re.sub(REGEX_ALL, "", entry)
         entry = re.sub(REGEX_NBSP, " ", entry)
