@@ -128,7 +128,7 @@ async def kmap (interaction: discord.Interaction, kmap_name: str):
                 kmap_name, kmap_url, image_url = data[entries]["name"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
                 entry = body_parser(entry)
-                embed = dis_card(name=kmap_name, ent_url=kmap_url, title= "", image_url=image_url)
+                embed = dis_card(name=kmap_name, ent_url=kmap_url, image_url=image_url)
                 break
         print(embed)
         if embed is None:
@@ -154,7 +154,7 @@ async def location (interaction: discord.Interaction, loc_name: str):
                 loc_name, entry, loc_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
                 entry = body_parser(entry)
-                embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, title= "", image_url=image_url)
+                embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, image_url=image_url)
                 break
         print(embed)
         if embed is None:
@@ -181,7 +181,7 @@ async def journal (interaction: discord.Interaction, journal_name: str):
                 journal_name, entry, journal_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
                 entry = body_parser(entry)
-                embed = dis_card(name=journal_name, ent_url=journal_url, entry=entry, title= "", image_url=image_url)
+                embed = dis_card(name=journal_name, ent_url=journal_url, entry=entry, image_url=image_url)
                 break
         print(embed)
         if embed is None:
@@ -207,7 +207,7 @@ async def note (interaction: discord.Interaction, note_name: str):
                 note_name, entry, note_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
                 entry = body_parser(entry)
-                embed = dis_card(name=note_name, ent_url=note_url, entry=entry, title= "", image_url=image_url)
+                embed = dis_card(name=note_name, ent_url=note_url, entry=entry, image_url=image_url)
                 break
         print(embed)
         if embed is None:
@@ -280,14 +280,14 @@ async def character (interaction: discord.Interaction, message:str):
     return
 
 # TODO add an embed for titles
-def dis_card(name, ent_url, entry, title="", image_url=""):
-    if title != "" or title != None:
+def dis_card(name, ent_url, entry, title, image_url=""):
+    if  title != None:
         name = name + " | " + title 
     embed = discord.Embed(title= name, url=ent_url, description= entry, color=0xff9b9b)
     embed.set_image(url=image_url)
     return embed
 
-def body_parser(entry, title=""):
+def body_parser(entry):
     if not entry == None:
         entry = re.sub(REGEX_BRACKET, "", entry)
         entry = re.sub(REGEX_I, "_ ", entry)
@@ -302,11 +302,11 @@ def body_parser(entry, title=""):
     else:
         entry = "N/a"
     
-    if title == "":
-        title = ""
-    else:
-        title = "**" + title + "**\n\n"
-        entry = title + entry
+    # if title == "":
+    #     title = ""
+    # else:
+    #     title = "**" + title + "**\n\n"
+    #     entry = title + entry
     return entry
 
 # Get Kanka server by name, return campaignID
