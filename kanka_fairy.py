@@ -26,13 +26,14 @@ REGEX_I = '<i.*?>|</i>'
 REGEX_B = '<b.*?>|</b>'
 REGEX_HR = '<hr.*?>'
 REGEX_BR = '<br>'
+REGEX_U = '<u.*?>|</u>'
 REGEX_ALL = r'<[^>]+>'
 REGEX_BRACKET = r'\[.*?:.*?\|'
 REGEX_NBSP = r'(&nbsp;)'
 REGEX_STRIKE = '<strike>|</strike>'
 MIRALL_KANKA = "Mysteries of Mirall"
 MIRALL_DISCORD = "Mirall Beach Academy"
-ENTITY_TYPE = ["characters", "locations", "journals", "notes"]
+ENTITY_TYPE = ["characters", "locations", "journals", "notes", "maps"]
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -88,7 +89,6 @@ async def wakeUp (interaction: discord.Interaction):
                         break
 
                     response = response.json()
-                    # print(response)
                     data.extend(response["data"])
 
                     if response["links"]["next"] is None:
@@ -99,8 +99,6 @@ async def wakeUp (interaction: discord.Interaction):
 
                 if not os.path.exists(f"./campaigns/{interaction.guild.name}/{members.name}"):
                     os.makedirs(f"./campaigns/{interaction.guild.name}/{members.name}")
-                # loop = asyncio.get_event_loop()
-                # await loop.run_in_executor(None, lambda: json.dump(data, open(f'./campaigns/{interaction.guild.name}/{members.name}/{type}.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=4))
                 with open(f'./campaigns/{interaction.guild.name}/{members.name}/{type}.json', 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
 
@@ -108,32 +106,34 @@ async def wakeUp (interaction: discord.Interaction):
                 await asyncio.sleep(0)         
     print("Done")
     await interaction.followup.send("Hmph fine! I'M U[P]. I'll spill the tea but not because you asked!!!! :anger:")
-    
 
-@bot.tree.command(name = "hello")
-async def hello (interaction: discord.Interaction):
-    await interaction.response.send_message(f"Hi {interaction.user.mention}!")
-
-#TODO
 @bot.tree.command(name = "flirt", description= "You're interested in me!? Oh you meant t̵̡̡̨̜̺͖̟̖̋̈͌͂̓̈́͊̃ḩ̸̫̼̠̘̪͔̮́͆̊̌͑̽̀̕̚͜͠ͅę̴̺̫̠̊̆̓͊͆̎̌̈́̚̕̕m̵̮͓̙͇͔̖̰͍͓̋͆̏͋͂͋̈́͘͝ ... ok no matter.")
 async def flirt (interaction: discord.Interaction):
     await interaction.response.send_message(rand_line("flirt.txt"))
 
-# TODO
-@bot.tree.command(name = "map", description="It's a bit dusty isn't it.")
-# @app_commands.describe(map_name = "Map name")
-async def kmap (interaction: discord.Interaction):
+@bot.tree.command(name = "kmap", description="It's a bit dusty isn't it.")
+@app_commands.describe(kmap_name = "Map name")
+async def kmap (interaction: discord.Interaction, kmap_name: str):
     await interaction.response.defer()
-    serverID = get_campaignID_by_name(interaction) + "/"
-    entity_type = "maps/"
 
-    map_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
-    map_url = map_info["data"][0]["image_full"]
-    kanka_url = map_info["data"][0]["urls"]["view"]
+    with open(f'./campaigns/{interaction.guild.name}/{interaction.user.name}/{ENTITY_TYPE[4]}.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        embed = None
 
-    await interaction.followup.send("" + map_url)
-    await interaction.followup.send("Kanka Link: " + kanka_url)
+        for entries in range(len(data)):
+            print("Data: " + data[entries]["name"])
+            print(re.search(kmap_name, data[entries]["name"], re.IGNORECASE))
 
+            if re.search(kmap_name, data[entries]["name"], re.IGNORECASE):
+                kmap_name, kmap_url, image_url = data[entries]["name"], data[entries]["urls"]["view"], data[entries]["image_full"]
+
+                entry = body_parser(entry)
+                embed = dis_card(name=kmap_name, ent_url=kmap_url, title= "", image_url=image_url)
+                break
+        print(embed)
+        if embed is None:
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + kmap_name)
+        await interaction.followup.send(embed=embed)
     return
 
 # TODO
@@ -146,10 +146,9 @@ async def location (interaction: discord.Interaction, loc_name: str):
         data = json.load(file)
         embed = None
 
-        # print("All: " + data)
         for entries in range(len(data)):
             print("Data: " + data[entries]["name"])
-            print(re.search(loc_name, data[entries]["name"], re.IGNORECASE | re.UNICODE))
+            print(re.search(loc_name, data[entries]["name"], re.IGNORECASE))
 
             if re.search(loc_name, data[entries]["name"], re.IGNORECASE):
                 loc_name, entry, loc_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
@@ -161,43 +160,7 @@ async def location (interaction: discord.Interaction, loc_name: str):
         if embed is None:
             await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + loc_name)
         await interaction.followup.send(embed=embed)
-        # if len(data) == 0:
-        #     await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + loc_name)
-        #     return
-        
-        # if len(data["data"]) == 0:
-        #     await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + loc_name)
-        #     return
-        
-        # if "error" in loc_info:
-        #     await interaction.followup.send("Output Error")
-        #     return
-        
-        # if loc_info["data"][0]["type"] != "location":
-        #     await interaction.followup.send("No locations found using input '" + loc_name + "'")
-        #     return
-    
-  
-    # await interaction.followup.send("No")
 
-
-
-    # serverID = get_campaignID_by_name(interaction) + "/"
-    # entity_type = "entities?name=" + loc_name
-
-    # # returns dict
-    # loc_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
-
-
-    
-    # loc_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), loc_info["data"][0]["urls"]["api"])
-
-    # loc_name = loc_response["data"]["name"]
-    # loc_url = loc_response["data"]["urls"]["view"]
-    # entry = loc_response["data"]["entry_parsed"]
-    # image_url = loc_response["data"]["image_full"]
-
- 
     return
 
 # TODO
@@ -205,80 +168,51 @@ async def location (interaction: discord.Interaction, loc_name: str):
 @app_commands.describe(journal_name = "Journal name")
 async def journal (interaction: discord.Interaction, journal_name: str):
     await interaction.response.defer()
-    serverID = get_campaignID_by_name(interaction) + "/"
-    entity_type = "entities?name=" + journal_name
 
-    # returns dict
-    journal_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    with open(f'./campaigns/{interaction.guild.name}/{interaction.user.name}/{ENTITY_TYPE[2]}.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        embed = None
 
-    print(journal_info)
-    if len(journal_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + journal_name)
-        return
-    
-    if len(journal_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + journal_name)
-        return
-    
-    if "error" in journal_info:
-        await interaction.followup.send("Output Error. Input: " + journal_name)
-        return
-    
-    if journal_info["data"][0]["type"] != "journal":
-        await interaction.followup.send("No journals found using input '" + journal_name + "'")
-        return
+        for entries in range(len(data)):
+            print("Data: " + data[entries]["name"])
+            print(re.search(journal_name, data[entries]["name"], re.IGNORECASE))
 
-    journal_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), journal_info["data"][0]["urls"]["api"])
+            if re.search(journal_name, data[entries]["name"], re.IGNORECASE):
+                journal_name, entry, journal_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
-    journal_name = journal_response["data"]["name"]
-    journal_url = journal_response["data"]["urls"]["view"]
-    entry = journal_response["data"]["entry_parsed"]
-    image_url = journal_response["data"]["image_full"]
-
-    entry = body_parser(entry)
-    embed = dis_card(name=journal_name, ent_url=journal_url, entry=entry, title= "", image_url=image_url)
-
-    await interaction.followup.send(embed=embed)
+                entry = body_parser(entry)
+                embed = dis_card(name=journal_name, ent_url=journal_url, entry=entry, title= "", image_url=image_url)
+                break
+        print(embed)
+        if embed is None:
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + journal_name)
+        await interaction.followup.send(embed=embed)
     return
 
-# TODO
+
 @bot.tree.command(name = "note", description="Peeking now? Scandalous!")
 @app_commands.describe(note_name = "Note name")
 async def note (interaction: discord.Interaction, note_name: str):
     await interaction.response.defer()
-    serverID = get_campaignID_by_name(interaction) + "/"
-    entity_type = "entities?name=" + note_name
 
-    note_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    with open(f'./campaigns/{interaction.guild.name}/{interaction.user.name}/{ENTITY_TYPE[3]}.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        embed = None
 
-    if len(note_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + note_name)
-        return
-    
-    if len(note_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + note_name)
-        return
-    
-    if "error" in note_info:
-        await interaction.followup.send("Output Error")
-        return
-    
-    if note_info["data"][0]["type"] != "note":
-        await interaction.followup.send("No note found using input '" + note_name + "'")
-        return
-    
-    note_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), note_info["data"][0]["urls"]["api"])
+        for entries in range(len(data)):
+            print("Data: " + data[entries]["name"])
+            print(re.search(note_name, data[entries]["name"], re.IGNORECASE))
 
-    # print(note_response)
-    note_name = note_response["data"]["name"]
-    note_url = note_response["data"]["urls"]["view"]
-    entry = note_response["data"]["entry_parsed"]
-    image_url = note_response["data"]["image_full"]
+            if re.search(note_name, data[entries]["name"], re.IGNORECASE):
+                note_name, entry, note_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
-    entry = body_parser(entry)
-    embed = dis_card(name=note_name, ent_url=note_url, entry=entry, title= "", image_url=image_url)
-
-    await interaction.followup.send(embed=embed)
+                entry = body_parser(entry)
+                embed = dis_card(name=note_name, ent_url=note_url, entry=entry, title= "", image_url=image_url)
+                break
+        print(embed)
+        if embed is None:
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + note_name)
+        await interaction.followup.send(embed=embed)
     return
 
 # # TODO Can not complete due to API problems
@@ -313,42 +247,25 @@ async def note (interaction: discord.Interaction, note_name: str):
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
     await interaction.response.defer()
-    message = "N/a"
-    serverID = get_campaignID_by_name(interaction) + "/"
-    entity_type = "entities?name=" + character_name 
 
-    # returns dict
-    char_info = api_call(os.getenv(interaction.user.name + '_TOKEN'), serverID, entity_type)
+    with open(f'./campaigns/{interaction.guild.name}/{interaction.user.name}/{ENTITY_TYPE[0]}.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        embed = None
 
-    if len(char_info) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + character_name)
-        return
-    
-    if len(char_info["data"]) == 0:
-        await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Data missing: " + character_name)
-        return
-    
-    if "error" in char_info:
-        await interaction.followup.send("Output Error")
-        return
-    
-    if char_info["data"][0]["type"] != "character":
-        await interaction.followup.send("No characters found using input '" + character_name + "'")
-        return
+        for entries in range(len(data)):
+            print("Data: " + data[entries]["name"])
+            print(re.search(character_name, data[entries]["name"], re.IGNORECASE))
 
-    # Can get the api url for charactes from the entities api response
-    char_response = api_call_url(os.getenv(interaction.user.name + '_TOKEN'), char_info["data"][0]["urls"]["api"])
+            if re.search(character_name, data[entries]["name"], re.IGNORECASE):
+                character_name, entry, note_url, image_url, title = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["title"]
 
-    entry = char_response["data"]["entry_parsed"]
-    title = char_response["data"]["title"]
-    name = char_response["data"]["name"]
-    char_url = char_response["data"]["urls"]["view"]
-    image_url=char_response["data"]["image_full"]
-
-    entry = body_parser(entry, title)
-    embed = dis_card(name, char_url, entry, title, image_url)
-    await interaction.followup.send(embed=embed)
-
+                entry = body_parser(entry)
+                embed = dis_card(name=character_name, ent_url=note_url, entry=entry, title= title, image_url=image_url)
+                break
+        print(embed)
+        if embed is None:
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + character_name)
+        await interaction.followup.send(embed=embed)
     return
 
 @bot.tree.command(name = "talk", description="Shh!")
@@ -362,19 +279,23 @@ async def character (interaction: discord.Interaction, message:str):
         await interaction.response.send_message("Sorry! Can't hear you !!!")
     return
 
+# TODO add an embed for titles
 def dis_card(name, ent_url, entry, title="", image_url=""):
-    embed = discord.Embed(title= name, url=ent_url, description=entry)
+    if title != "" or title != None:
+        name = name + " | " + title 
+    embed = discord.Embed(title= name, url=ent_url, description= entry, color=0xff9b9b)
     embed.set_image(url=image_url)
     return embed
 
 def body_parser(entry, title=""):
     if not entry == None:
         entry = re.sub(REGEX_BRACKET, "", entry)
-        entry = re.sub(REGEX_I, "__ ", entry)
+        entry = re.sub(REGEX_I, "_ ", entry)
         entry = re.sub(REGEX_BR, "\n\n", entry)
         entry = re.sub(REGEX_B, "** ", entry)
         entry = re.sub(REGEX_HR, "\n\n", entry)
         entry = re.sub(REGEX_STRIKE, "~~ ", entry)
+        entry = re.sub(REGEX_U, "__ ", entry)
         entry = re.sub(REGEX_P, " ", entry)
         entry = re.sub(REGEX_ALL, "", entry)
         entry = re.sub(REGEX_NBSP, " ", entry)
@@ -386,7 +307,6 @@ def body_parser(entry, title=""):
     else:
         title = "**" + title + "**\n\n"
         entry = title + entry
-
     return entry
 
 # Get Kanka server by name, return campaignID
@@ -404,7 +324,6 @@ def get_campaignID_by_name(interaction:discord.Interaction):
             return campaignID
 
     print(MSG_NO_MATCHING_CAMPAIGN)
-
     return MSG_NO_MATCHING_CAMPAIGN
 
 def api_call (token, campaign_id = "", entity_type = "", entity_name =""):
@@ -423,7 +342,6 @@ def api_call (token, campaign_id = "", entity_type = "", entity_name =""):
         print(f"Error: {response.status_code} - {response.text}")
     
     response = response.json()
-
     return response 
 
 def api_call_url(token, url):
