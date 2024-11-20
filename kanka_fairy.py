@@ -280,7 +280,7 @@ async def character (interaction: discord.Interaction, message:str):
     return
 
 # TODO add an embed for titles
-def dis_card(name, ent_url, entry, title, image_url=""):
+def dis_card(name, ent_url, entry, title=None, image_url=""):
     if  title != None:
         name = name + " | " + title 
     embed = discord.Embed(title= name, url=ent_url, description= entry, color=0xff9b9b)
