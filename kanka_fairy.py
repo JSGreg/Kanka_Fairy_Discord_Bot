@@ -11,10 +11,13 @@ from pathlib import Path
 
 # TODO
 # Search Function (https://app.kanka.io/api-docs/1.0/entities)
-# Cache responses
 # Transfer page from one campaign to another
 # Show viewing perms
 # Make changes to viewing perms
+# music
+# dice
+# Actual calendar
+
 
 
 REQUEST_PATH = "https://api.kanka.io/1.0/"
@@ -151,7 +154,10 @@ async def location (interaction: discord.Interaction, loc_name: str):
             print(re.search(loc_name, data[entries]["name"], re.IGNORECASE))
 
             if re.search(loc_name, data[entries]["name"], re.IGNORECASE):
-                loc_name, entry, loc_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
+                loc_name, entry, loc_url, image_url, is_private = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["is_private"]
+
+            if interaction.guild.owner.name is interaction.user.name and is_private:
+                loc_name = loc_name + " :lock:"
 
                 entry = body_parser(entry)
                 embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, image_url=image_url)
@@ -178,8 +184,11 @@ async def journal (interaction: discord.Interaction, journal_name: str):
             print(re.search(journal_name, data[entries]["name"], re.IGNORECASE))
 
             if re.search(journal_name, data[entries]["name"], re.IGNORECASE):
-                journal_name, entry, journal_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
-
+                journal_name, entry, journal_url, image_url, is_private = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["is_private"]
+                
+                if interaction.guild.owner.name is interaction.user.name and is_private:
+                    journal_name = journal_name + " :lock:"
+                
                 entry = body_parser(entry)
                 embed = dis_card(name=journal_name, ent_url=journal_url, entry=entry, image_url=image_url)
                 break
@@ -204,7 +213,10 @@ async def note (interaction: discord.Interaction, note_name: str):
             print(re.search(note_name, data[entries]["name"], re.IGNORECASE))
 
             if re.search(note_name, data[entries]["name"], re.IGNORECASE):
-                note_name, entry, note_url, image_url = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"]
+                note_name, entry, note_url, image_url, is_private= data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["is_private"]
+                
+                if interaction.guild.owner.name is interaction.user.name and is_private:
+                    note_name = note_name + " :lock:"
 
                 entry = body_parser(entry)
                 embed = dis_card(name=note_name, ent_url=note_url, entry=entry, image_url=image_url)
@@ -255,12 +267,15 @@ async def character (interaction: discord.Interaction, character_name:str):
         for entries in range(len(data)):
             print("Data: " + data[entries]["name"])
             print(re.search(character_name, data[entries]["name"], re.IGNORECASE))
-
+            
             if re.search(character_name, data[entries]["name"], re.IGNORECASE):
-                character_name, entry, note_url, image_url, title = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["title"]
+                character_name, entry, note_url, image_url, title, is_private = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["title"], data[entries]["is_private"]
 
+                if interaction.guild.owner.name is interaction.user.name and is_private:
+                    title = str(title) + " :lock:"
                 entry = body_parser(entry)
                 embed = dis_card(name=character_name, ent_url=note_url, entry=entry, title= title, image_url=image_url)
+                
                 break
         print(embed)
         if embed is None:
