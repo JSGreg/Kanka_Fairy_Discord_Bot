@@ -242,7 +242,10 @@ async def note (interaction: discord.Interaction, note_name: str):
 
 #     return
 
-# TODO
+# TODO 
+# If you want to make a multi character selector you need ot change the character name section so that 
+# it doesn't get overwritten and you need to implement another loop/search/list to pull the right data from 
+# the list
 @bot.tree.command(name = "character", description="Are you looking for me?")
 @app_commands.describe(character_name = "Character name")
 async def character (interaction: discord.Interaction, character_name:str):
@@ -258,13 +261,14 @@ async def character (interaction: discord.Interaction, character_name:str):
 
             if re.search(character_name, data[entries]["name"], re.IGNORECASE):
                 character_name, entry, note_url, image_url, title = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["title"]
-
+                print(character_name)
                 entry = body_parser(entry)
                 embed = dis_card(name=character_name, ent_url=note_url, entry=entry, title= title, image_url=image_url)
                 break
+            
         print(embed)
         if embed is None:
-            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + character_name)
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong?" + character_name)
         await interaction.followup.send(embed=embed)
     return
 
