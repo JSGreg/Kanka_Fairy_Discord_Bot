@@ -97,6 +97,8 @@ async def wakeUp (interaction: discord.Interaction):
                         break
                     elif response.headers["Content-Type"] != "application/json":
                         print(f"Error: {response.status_code} - {response.headers['Content-Type']}")
+                        break
+                    print(response.headers['Content-Type'])
                     
                     response = response.json()
                     data.extend(response["data"])
