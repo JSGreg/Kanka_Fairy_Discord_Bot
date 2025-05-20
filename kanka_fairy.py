@@ -8,6 +8,8 @@ import re
 import json
 import asyncio
 from pathlib import Path
+from dotenv import load_dotenv
+from datetime import datetime, timezone
 
 # TODO
 # Search Function (https://app.kanka.io/api-docs/1.0/entities)
@@ -17,8 +19,6 @@ from pathlib import Path
 # music
 # dice
 # Actual calendar
-
-
 
 REQUEST_PATH = "https://api.kanka.io/1.0/"
 MSG_ENTITY_NOT_FOUND = "Entity not found."
@@ -37,6 +37,8 @@ REGEX_STRIKE = '<strike>|</strike>'
 MIRALL_KANKA = "Mysteries of Mirall"
 MIRALL_DISCORD = "Mirall Beach Academy"
 ENTITY_TYPE = ["characters", "locations", "journals", "notes", "maps"]
+
+load_dotenv()
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -63,6 +65,7 @@ async def wakeUp (interaction: discord.Interaction):
     
     member_list = interaction.guild.members
     campaign_id = get_campaignID_by_name(interaction)
+    last_sync = "lastSync=2025-04-15T09:30:11.000000Z"
 
     # print(os.getenv(discord.Client.users[0] + "_TOKEN"))
     # entity_type = "entities?name=" 
@@ -78,7 +81,9 @@ async def wakeUp (interaction: discord.Interaction):
                 print(members.name)
                 print(type)
                 while True: 
+                    # url = f"{REQUEST_PATH}campaigns/{campaign_id}/{type}?page={page}&{last_sync}"
                     url = f"{REQUEST_PATH}campaigns/{campaign_id}/{type}?page={page}"
+                    # url = f"{REQUEST_PATH}campaigns/{campaign_id}/{type}?{last_sync}"
 
                     headers = {
                         'Content-Type': 'application/json',
@@ -90,7 +95,9 @@ async def wakeUp (interaction: discord.Interaction):
                     if response.status_code != 200:
                         print(f"Error: {response.status_code} - {response.text}")
                         break
-
+                    elif response.headers["Content-Type"] != "application/json":
+                        print(f"Error: {response.status_code} - {response.headers['Content-Type']}")
+                    
                     response = response.json()
                     data.extend(response["data"])
 
@@ -130,7 +137,6 @@ async def kmap (interaction: discord.Interaction, kmap_name: str):
             if re.search(kmap_name, data[entries]["name"], re.IGNORECASE):
                 kmap_name, kmap_url, image_url = data[entries]["name"], data[entries]["urls"]["view"], data[entries]["image_full"]
 
-                entry = body_parser(entry)
                 embed = dis_card(name=kmap_name, ent_url=kmap_url, image_url=image_url)
                 break
         print(embed)
@@ -156,8 +162,8 @@ async def location (interaction: discord.Interaction, loc_name: str):
             if re.search(loc_name, data[entries]["name"], re.IGNORECASE):
                 loc_name, entry, loc_url, image_url, is_private = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["is_private"]
 
-            if interaction.guild.owner.name is interaction.user.name and is_private:
-                loc_name = loc_name + " :lock:"
+                if interaction.guild.owner.name is interaction.user.name and is_private:
+                    loc_name = loc_name + " :lock:"
 
                 entry = body_parser(entry)
                 embed = dis_card(name=loc_name, ent_url=loc_url, entry=entry, image_url=image_url)
@@ -280,6 +286,7 @@ async def character (interaction: discord.Interaction, character_name:str):
         print(embed)
         if embed is None:
             await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + character_name)
+            
         await interaction.followup.send(embed=embed)
     return
 
@@ -292,10 +299,11 @@ async def character (interaction: discord.Interaction, message:str):
         await interaction.response.send_message(str(message))
     else:
         await interaction.response.send_message("Sorry! Can't hear you !!!")
+    
     return
 
 # TODO add an embed for titles
-def dis_card(name, ent_url, entry, title=None, image_url=""):
+def dis_card(name, ent_url, entry="", title=None, image_url=""):
     if  title != None:
         name = name + " | " + title 
     embed = discord.Embed(title= name, url=ent_url, description= entry, color=0xff9b9b)
@@ -308,10 +316,10 @@ def body_parser(entry):
         entry = re.sub(REGEX_I, "_ ", entry)
         entry = re.sub(REGEX_BR, "\n\n", entry)
         entry = re.sub(REGEX_B, "** ", entry)
-        entry = re.sub(REGEX_HR, "\n\n", entry)
+        entry = re.sub(REGEX_HR, "\n", entry)
         entry = re.sub(REGEX_STRIKE, "~~ ", entry)
         entry = re.sub(REGEX_U, "__ ", entry)
-        entry = re.sub(REGEX_P, " ", entry)
+        entry = re.sub(REGEX_P, " \n", entry)
         entry = re.sub(REGEX_ALL, "", entry)
         entry = re.sub(REGEX_NBSP, " ", entry)
     else:
@@ -359,18 +367,18 @@ def api_call (token, campaign_id = "", entity_type = "", entity_name =""):
     response = response.json()
     return response 
 
-def api_call_url(token, url):
+# def api_call_url(token, url):
 
-    headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ' + token
-    }
+#     headers = {
+#         'Content-Type': 'application/json',
+#         'Accept': 'application/json',
+#         'Authorization': 'Bearer ' + token
+#     }
 
-    response = requests.request("GET", url, headers=headers)
-    response = response.json()
+#     response = requests.request("GET", url, headers=headers)
+#     response = response.json()
 
-    return response 
+#     return response 
 
 def rand_line(file_name): 
     with open(file_name, 'r', encoding="utf-8") as file: 
@@ -379,5 +387,52 @@ def rand_line(file_name):
         random_line = lines[random_index] 
         random_line = "Ok fine then. Line " + str(random_index) + ": " + random_line
     return random_line 
+# xdate = datetime.today()
+
+def backup_kanka():
+    # Keep track of date
+    date = datetime.today()
+    date = f"{datetime.date(date)}T{datetime.time(date)}Z"
+    print(date)
+    data=api_call(os.getenv("pom_pom_pom_TOKEN"))
+
+    # campaignID = os.getenv(f"DM")
+    with open('.env', "r") as f:
+        while True:
+            line = f.readline()
+            # Read till end of file
+            if line == "":
+                print("Break")
+                break
+            else:
+                print("looking")
+                dm = line
+                # print(re.search('.*TOKEN', dm))
+                # Searches for everything that is not a api token so campaign ids
+                print(dm)
+                if re.search('.*TOKEN', dm) is None:
+
+                    # Spits the campaign id from the dm (You can cut the first 2 values off if needed)
+                    splitEnv = str.split(dm)
+                    
+                    print(splitEnv)
+
+
+            # print(f.read())
+            # print(i)
+            print("We are here")
+
+    # Testing
+
+    var = str.split(os.getenv("aileremedia_DM"))
+
+    print(var[1])
+    # with open(f'test.json', 'w', encoding='utf-8') as f:
+    #     json.dump(data, f, ensure_ascii=False, indent=4)
+
+    return
+
+backup_kanka()
+# print(f"{datetime.date(date)}T{datetime.time(date)}Z")
 
 bot.run(os.getenv('TOKEN'))
