@@ -36,7 +36,7 @@ REGEX_NBSP = r'(&nbsp;)'
 REGEX_STRIKE = '<strike>|</strike>'
 MIRALL_KANKA = "Mysteries of Mirall"
 MIRALL_DISCORD = "Mirall Beach Academy"
-ENTITY_TYPE = ["characters", "locations", "journals", "notes", "maps"]
+ENTITY_TYPE = ["characters", "locations", "journals", "notes", "maps", "creatures"]
 
 load_dotenv()
 
@@ -291,6 +291,36 @@ async def character (interaction: discord.Interaction, character_name:str):
             
         await interaction.followup.send(embed=embed)
     return
+
+# TODO
+@bot.tree.command(name = "creature", description="No no! That's mine give it back!!!")
+@app_commands.describe(creature_name = "Creature name")
+async def creature (interaction: discord.Interaction, creature_name: str):
+    await interaction.response.defer()
+
+    with open(f'./campaigns/{interaction.guild.name}/{interaction.user.name}/{ENTITY_TYPE[5]}.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        embed = None
+
+        for entries in range(len(data)):
+            print("Data: " + data[entries]["name"])
+            print(re.search(creature_name, data[entries]["name"], re.IGNORECASE))
+
+            if re.search(creature_name, data[entries]["name"], re.IGNORECASE):
+                creature_name, entry, creature_url, image_url, is_private = data[entries]["name"], data[entries]["entry_parsed"], data[entries]["urls"]["view"], data[entries]["image_full"], data[entries]["is_private"]
+                
+                if interaction.guild.owner.name is interaction.user.name and is_private:
+                    creature_name = creature_name + " :lock:"
+                
+                entry = body_parser(entry)
+                embed = dis_card(name=creature_name, ent_url=creature_url, entry=entry, image_url=image_url)
+                break
+        print(embed)
+        if embed is None:
+            await interaction.followup.send("Entity does not exist. Perhaps you spelt something wrong? Length error: " + creature_name)
+        await interaction.followup.send(embed=embed)
+    return
+
 
 @bot.tree.command(name = "talk", description="Shh!")
 @app_commands.describe(message = "Make a message")
