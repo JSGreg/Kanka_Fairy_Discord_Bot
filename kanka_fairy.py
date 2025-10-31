@@ -1,5 +1,7 @@
 import random
 import discord
+import schedule 
+import time
 from discord import app_commands
 from discord.ext import commands
 import os
@@ -10,6 +12,7 @@ import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime, timezone
+
 
 # TODO
 # Search Function (https://app.kanka.io/api-docs/1.0/entities)
@@ -419,52 +422,122 @@ def rand_line(file_name):
         random_line = lines[random_index] 
         random_line = "Ok fine then. Line " + str(random_index) + ": " + random_line
     return random_line 
-# xdate = datetime.today()
 
-def backup_kanka():
-    # Keep track of date
-    date = datetime.today()
-    date = f"{datetime.date(date)}T{datetime.time(date)}Z"
-    print(date)
-    data=api_call(os.getenv("pom_pom_pom_TOKEN"))
 
-    # campaignID = os.getenv(f"DM")
-    with open('.env', "r") as f:
+def backup():
+    campaign_name =[]
+    campaign_id = []
+    player_name= []
+    player_id=[]
+    campaign_number=0
+
+    with open(".env", "r") as f:
+
+        line =f.readline()
+
+        # This will parse the env to create players and campaigns
         while True:
-            line = f.readline()
-            # Read till end of file
-            if line == "":
-                print("Break")
+            line =f.readline()
+            if line == "" or line == EOFError:
                 break
             else:
-                print("looking")
-                dm = line
-                # print(re.search('.*TOKEN', dm))
-                # Searches for everything that is not a api token so campaign ids
-                print(dm)
-                if re.search('.*TOKEN', dm) is None:
+                current_line = line
 
-                    # Spits the campaign id from the dm (You can cut the first 2 values off if needed)
-                    splitEnv = str.split(dm)
+                # if not a token we will treat as campaign
+                if re.search("TOKEN", current_line) is None:
+                    splitEnv = str.split(current_line)
+
+                    # Seperate campaign into ID and Name
+                    campaign_name.append(splitEnv[0].replace('_'," "))
+                    campaign_id.append(splitEnv[-1])
+                # otherwise treat as player
+                else: 
+                    splitEnv = str.split(current_line)
                     
-                    print(splitEnv)
+                    #sperate player and token
+                    
+                    player_name.append(re.sub('_TOKEN', "", splitEnv[0]))
+                    player_id.append(splitEnv[-1])
+        print(campaign_name)
+        print (campaign_id)
+        print(player_name)
+
+        for id in campaign_id:
+            if not os.path.exists(f"./backup"):
+                os.makedirs(f"./backup")
+            if os.path.exists(f"./campaigns/{campaign_name[campaign_number]}"):
+                os.rename(f"./campaigns/{campaign_name[campaign_number]}", f"./backup/{campaign_name[campaign_number]}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}")
+                    
+            player_number = 0
+            for player in player_id:
+                for type in ENTITY_TYPE:
+                    page = 1
+                    data = []
+
+                    while True:
+                        success = False
+                        while not success:
+                            url = f"{REQUEST_PATH}campaigns/{id}/{type}?page={page}"
+
+                            headers = {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'Authorization': 'Bearer ' + player
+                            }
+                            response = requests.request("GET", url, headers=headers)
+
+                            print (f"Player: {player_name[player_number]}")
+                            print(f"Campaign: {id}")
+                            # Check if rate limit if no continue
+                            if response.status_code == 429:
+                                print(f"Error: {response.status_code} - {response.text}")
+                                print("Waiting for 60 seconds")
+                                time.sleep(60)
+                            else:
+                                success = True
+
+                        # If other problem print and tell me
+                        if response.status_code != 200:
+                            print(f"Error: {response.status_code} - {response.text}")
+                            break
+                        elif response.headers["Content-Type"] != "application/json":
+                            print(f"Error: {response.status_code} - {response.headers['Content-Type']}")
+                            break
+
+                        # If no problem add to the list
+                        response = response.json()
+                        data.extend(response["data"])
+
+                        # if end of data move on
+                        if response["links"]["next"] is None:
+                            print("Reached end of pages")
+                            break
+
+                        page+=1
+                    # after specific type is done make file and folders
+                    # if path doesn't exist make new path
+                    if not os.path.exists(f"./campaigns/{campaign_name[campaign_number]}/{player_name[player_number]}"):
+                        os.makedirs(f"./campaigns/{campaign_name[campaign_number]}/{player_name[player_number]}")
+                    # Creates the jsons for player info
+                    with open(f'./campaigns/{campaign_name[campaign_number]}/{player_name[player_number]}/{type}.json', 'w', encoding='utf-8') as f:
+                        json.dump(data, f, ensure_ascii=False, indent=4)
+                # Update plyaer number after types are collected
+                player_number=player_number+1
+            # Update campaign after campaign is done
+            campaign_number=campaign_number+1
+            
+
+# Backup needs while loop to check for the backup job
+# Bot needs to run continuously blocking loop
+# Neither of them can do what they want
+# NEED WORK AROUND
 
 
-            # print(f.read())
-            # print(i)
-            print("We are here")
-
-    # Testing
-
-    var = str.split(os.getenv("aileremedia_DM"))
-
-    print(var[1])
-    # with open(f'test.json', 'w', encoding='utf-8') as f:
-    #     json.dump(data, f, ensure_ascii=False, indent=4)
-
-    return
-
-backup_kanka()
-# print(f"{datetime.date(date)}T{datetime.time(date)}Z")
+# schedule.every().day.at("01:00").do(backup)
+# print("this is where we are")
+# while True:
+#     print("Should bot run backup?")
+#     schedule.run_pending()
+#     time.sleep(60)
 
 bot.run(os.getenv('TOKEN'))
